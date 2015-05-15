@@ -1,0 +1,23 @@
+{
+  "name": "angular.dragndrop",
+  "version": "1.0.0",
+  "description": "Pure AngularJS based Drag and Drop (no jQuery)",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/eu81273/angular.dragndrop.git"
+  },
+  "author": "AHN JAE-HA",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/eu81273/angular.dragndrop/issues"
+  },
+  "homepage": "https://github.com/eu81273/angular.dragndrop",
+  "devDependencies": {
+    "gulp": "^3.8.11",
+    "gulp-rename": "^1.2.0",
+    "gulp-uglify": "^1.1.0"
+  }
+}
