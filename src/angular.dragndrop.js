@@ -4,175 +4,155 @@
 	License: MIT
 */
 
-(function ( angular ) {
+(function () {
 	"use strict";
 
-	var module = angular.module( "angular.dragndrop", [] );
+	var module = angular.module("angular.dragndrop", []);
 
-	//객체를 저장하는 서비스
-	module.factory('elementStorage', function () {
-
-		//엘리먼트 저장소
-		var element = {};
-
-		return {
-			getElement : function ( id ) { return element[id]; },
-			setElement : function ( id, object ) { element[id] = object; }
-		};
+	module.constant("configurations", {
+		"draggableClass": "",
+		"droppableClass": ""
 	});
 
-	//드래그 
-	module.directive('draggable', ['$parse', 'elementStorage', function( $parse, elementStorage ) {
+	module.provider("dragndrop", ["configurations", function (configurations) {
 
-		return function(scope, element, attrs) {
+		this.setDraggableClass = function (className) {
+			configurations.draggableClass = className;
+			//for chaining
+			return this;
+		};
 
-			//드래그하는 객체
-			var eventTarget = $parse(attrs['data-draggable'] || attrs['draggable'] || undefined, /* interceptorFn */ null, /* expensiveChecks */ true);
+		this.setDroppableClass = function (className) {
+			configurations.droppableClass = className;
+			//for chaining
+			return this;
+		};
 
-			//드래그 속성 부여
+		this.$get = function () {
+
+			var element = {};
+
+			var getElement = function (id) { 
+				return element[id];
+			};
+
+			var setElement = function (id, object) {
+				element[id] = object;
+			};
+
+			return {
+				getElement : getElement,
+				setElement : setElement
+			}
+		};
+	}]);
+
+	module.directive("draggable", ["$parse", "dragndrop", "configurations", function ($parse, dragndrop, configurations) {
+
+		return function (scope, element, attrs) {
+
+			var eventTarget = $parse(attrs.draggableModel || undefined, /* interceptorFn */ null, /* expensiveChecks */ true)(scope);
+			var eventRestricted = attrs.restricted;
+			var dragStartCallback = $parse(attrs.dragStartCallback || undefined, /* interceptorFn */ null, /* expensiveChecks */ true);
+			var dragEndCallback = $parse(attrs.dragEndCallback || undefined, /* interceptorFn */ null, /* expensiveChecks */ true);
+
+			//add draggable attribute
 			element.attr("draggable", true);
 
-			//드래그 시작 이벤트
-			element.on("dragstart", function(e){
+			element.on("dragstart", function (event) {
+				//save current event target
+				dragndrop.setElement("eventTarget", eventTarget);
+				//save current event target's restrict
+				dragndrop.setElement("eventRestricted", eventRestricted);
 
-				//현재 객체를 저장
-				elementStorage.setElement( "eventTarget", eventTarget(scope) );
+				event.dataTransfer.effectAllowed = "copy";
+				//for FireFox compatibility
+				event.dataTransfer.setData("Text", "");
 
-				//현재 객체의 타입을 저장
-				elementStorage.setElement( "eventTargetType", e.target.getAttribute("data-type") );
-
-				//이동 효과 설정
-				e.dataTransfer.effectAllowed = "copy";
-
-				//FireFox 호환을 위해서 dataTransfer에 객체의 타입을 저장
-				e.dataTransfer.setData("Text", "");
-				
-				//추가적인 이동 효과를 위한 클래스 설정
-				element.addClass('drag-start-element');
+				element.addClass(configurations.draggableClass);
+				//if type of dragStartCallback is function..
+				typeof dragStartCallback == "function" && dragStartCallback(scope, {$event: {target:dragndrop.getElement("eventTarget"), targetType:dragndrop.getElement("eventRestricted")}});
 
 				return false;
 			});
 
-			//드래그 종료 이벤트
-			element.on("dragend", function(e){
-
-				//추가적인 이동 효과를 위한 클래스 제거
-				element.removeClass('drag-start-element');
+			element.on("dragend", function (event) {
+				element.removeClass(configurations.draggableClass);
+				//if type of dragEndCallback is function..
+				typeof dragEndCallback == "function" && dragEndCallback(scope, {$event: {target:dragndrop.getElement("eventTarget"), targetType:dragndrop.getElement("eventRestricted")}});
 
 				return false;
 			});
 		}
 	}]);
 
-	module.directive('droppable', ['$rootScope', '$parse', 'elementStorage', function($rootScope, $parse, elementStorage) {
+	module.directive("droppable", ["$parse", "dragndrop", "configurations", function($parse, dragndrop, configurations) {
 
-		return function(scope, element, attrs) {
+		return function (scope, element, attrs) {
 
-			//이벤트 체크 변수 초기화
-			var entered = false;
-			var duplicated = false;
+			var eventRestricted = attrs.restricted;
+			var flagOriginalEvent = false, flagDuplicatedEvent = false;
+			var dropCallback = $parse(attrs.dropCallback || undefined, /* interceptorFn */ null, /* expensiveChecks */ true);
 
-			//드래그 오버 이벤트
-			element.on("dragover", function(e) {
+			element.on("dragover", function (event) {
 
-				//같은 타입인 경우에만
-				if ( attrs.type == elementStorage.getElement("eventTargetType") ) {
-
-					//이벤트 기본 동작 중지를 하지 않으면, DROP 이벤트가 발생하지 않는다.
-					e.preventDefault && e.preventDefault();
-
-					//이동 효과 설정
-					e.dataTransfer.dropEffect = "copy";
+				if (eventRestricted == dragndrop.getElement("eventRestricted")) {
+					//if not prevent default, then no drop event..
+					event.preventDefault && event.preventDefault();
+					event.dataTransfer.dropEffect = "copy";
 				}
 
 				return false;
 			});
 
-			//드래그 엔터 이벤트
-			element.on("dragenter", function(e) {
+			element.on("dragenter", function (event) {
 
-				if ( attrs.type == elementStorage.getElement("eventTargetType") ) {
-
-					if ( entered ) {
-						duplicated = true;
+				if (eventRestricted == dragndrop.getElement("eventRestricted")) {
+					if (flagOriginalEvent) {
+						flagDuplicatedEvent = true;
 					}
-
 					else {
-
-						entered = true;
-
-						//현재 드랍 영역에 추가적인 이동 효과를 위한 클래스 설정
-						element.addClass("drag-over-border");
+						flagOriginalEvent = true;
+						//add droppable class
+						element.addClass(configurations.droppableClass);
 					}
 				}
 
 				return false;
 			});
 
+			element.on("dragleave", function (event) {
 
-
-			//드래그 리브 이벤트
-			element.on("dragleave", function(e) {
-
-				if ( attrs.type == elementStorage.getElement("eventTargetType") ) {
-
-					if ( duplicated ) {
-						duplicated = false;
+				if (eventRestricted == dragndrop.getElement("eventRestricted")) {
+					if (flagDuplicatedEvent) {
+						flagDuplicatedEvent = false;
 					}
-
-					else if ( entered ) {
-						entered = false;
+					else if (flagOriginalEvent) {
+						flagOriginalEvent = false;
 					}
-
-					if (!entered && !duplicated) {
-
-						//추가적인 이동 효과를 위한 클래스 제거
-						element.removeClass("drag-over-border");
+					if (!flagOriginalEvent && !flagDuplicatedEvent) {
+						//remove droppable class
+						element.removeClass(configurations.droppableClass);
 					}
 				}
 
 				return false;
 			});
 
-			//드랍 이벤트
-			element.on("drop", function(e) {
+			element.on("drop", function (event) {
 
-				if ( attrs.type == elementStorage.getElement("eventTargetType") ) {
+				if (eventRestricted == dragndrop.getElement("eventRestricted")) {
+					event.preventDefault && event.preventDefault();
+					event.stopPropagation && event.stopPropagation();
 
-					//이벤트 기본 동작 중지
-					e.preventDefault && e.preventDefault();
+					//reset vars for duplicated event checking
+					flagOriginalEvent = false, flagDuplicatedEvent = false;
 
-					//일부 브라우저 리다이렉팅을 막기 위해 전파 방지 
-					e.stopPropagation && e.stopPropagation();
+					//remove droppable class
+					element.removeClass(configurations.droppableClass);
 
-					//이벤트 체크 변수 초기화
-					entered = false, duplicated = false;
-
-					//추가적인 이동 효과를 위한 클래스 제거
-					element.removeClass("drag-over-border");
-
-					//콜백 초기화
-					var dropCallback = $parse(attrs['data-droppable'] || attrs['droppable'] || undefined, /* interceptorFn */ null, /* expensiveChecks */ true);
-
-					//콜백 함수 호출
-					if ('undefined' !== typeof dropCallback) {
-
-						//두 가지 케이스가 있기 때문에, 익명 함수로 한번 감싸준다.
-						var callback = function() {
-							dropCallback(scope, { $event:{target:elementStorage.getElement( "eventTarget"), targetType:elementStorage.getElement( "eventTargetType")}} );
-						}
-
-						//현재 $digest cycle 상태이면,
-						if ($rootScope.$$phase) {
-							//비동기로 실행
-							scope.$evalAsync(callback);
-						}
-
-						else {
-							//그렇지 않으면 바로 실행
-							scope.$apply(callback);
-						}
-					}
+					//if type of dragEndCallback is function..
+					typeof dropCallback == "function" && dropCallback(scope, {$event: {target:dragndrop.getElement("eventTarget"), restricted:dragndrop.getElement("eventRestricted")}});
 				}
 
 				return false;
@@ -181,4 +161,5 @@
 		}
 	}]);
 
-})(angular);
+})();
+

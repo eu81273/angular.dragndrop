@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html data-ng-app="angularApplication">
+	<head>
+		<meta charset="utf-8">
+		<title>angular.dragndrop demo</title>
+		<link href="//cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.css" rel="stylesheet" type="text/css">
+		<link href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.4/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+
+		<style>
+			.filled-square-rounded {
+				border-radius: 6px;
+				padding: 5px;
+				min-height: 50px;
+				background-color: rgba(150,150,150, 0.1);
+				transition:padding ease 0.5s;
+			}
+
+			.drag-over-border {
+				padding: 10px;
+				border: 2px dashed silver;
+				transition:padding ease 0.5s;
+			}
+
+			.drag-start-element {
+				background-color: red;
+			}
+		</style>
+
+		<script src="//cdnjs.cloudflare.com/ajax/libs/angular.js/1.3.15/angular.min.js"></script> <!-- v1.3.15 -->
+		<script src="../dist/angular.dragndrop.min.js"></script>
+
+	</head>
+	<body data-ng-controller="defaultController" data-ng-cloak>
+		<div class="container">
+			<ul class="list-group filled-square-rounded">
+				<li class="list-group-item" draggable data-draggable-model="testmodel" data-drag-start-callback="dragStart($event)" data-drag-end-callback="dragEnd($event)" data-restricted="typeAAA">
+					<h5 class="list-group-item-heading pointer-cursor" data-ng-click="">Movable Element</h5>
+				</li>
+			</ul>
+
+			<ul class="list-group filled-square-rounded" data-restricted="typeAAA" droppable data-drop-callback="elementDrop('typeAAA', $event)">
+
+			</ul>
+
+			<ul class="list-group filled-square-rounded" data-restricted="typeBBB" droppable>
+
+			</ul>
+
+		</div>
+
+
+		<script>
+			var app = angular.module('angularApplication', ['angular.dragndrop']);
+
+			app.config(['dragndropProvider', function (dragndropProvider) {
+
+				//dragndropProvider settings
+				dragndropProvider
+					.setDraggableClass('drag-start-element')
+					.setDroppableClass('drag-over-border');
+
+			}]);
+
+			app.controller('defaultController', function($scope) {
+
+				$scope.testmodel = "testModel";
+
+				$scope.dragStart = function( $event )  {
+					console.log("drag start", $event);
+				};
+
+
+				$scope.dragEnd = function ($event)  {
+					console.log("drag end", $event);
+				};
+
+
+				$scope.elementDrop = function( type, $event )  {
+					console.log('$event', $event)
+					console.log("drop place", type);
+					console.log("drag target", $event.target);
+					console.log("drag restricted", $event.restricted);
+				};
+			});
+
+		</script>
+	</body>
+</html>
