@@ -51,24 +51,32 @@
 
 		return function (scope, element, attrs) {
 
-			var eventTarget = $parse(attrs.draggableModel || undefined, /* interceptorFn */ null, /* expensiveChecks */ true)(scope);
 			var eventRestricted = attrs.restricted;
 			var effectAllowed = attrs.effectAllowed || "copy";
+			var eventTarget = $parse(attrs.draggableModel || undefined, /* interceptorFn */ null, /* expensiveChecks */ true)(scope);
 			var dragStartCallback = $parse(attrs.dragStartCallback || undefined, /* interceptorFn */ null, /* expensiveChecks */ true);
 			var dragEndCallback = $parse(attrs.dragEndCallback || undefined, /* interceptorFn */ null, /* expensiveChecks */ true);
 
 			//add draggable attribute
 			element.attr("draggable", true);
 
-			element.on("dragstart", function (event) {
+			element[0].addEventListener("dragstart", function (event) {
 				//save current event target
 				dragndrop.setElement("eventTarget", eventTarget);
 				//save current event target's restrict
 				dragndrop.setElement("eventRestricted", eventRestricted);
 
-				event.dataTransfer.effectAllowed = effectAllowed;
-				//for FireFox compatibility
-				event.dataTransfer.setData("Text", "");
+				//jQuery Event..
+				if (!event.dataTransfer) {
+					event.originalEvent.dataTransfer.effectAllowed = effectAllowed;
+					//for FireFox compatibility
+					event.originalEvent.dataTransfer.setData("Text", "");
+				}
+				else {
+					event.dataTransfer.effectAllowed = effectAllowed;
+					//for FireFox compatibility
+					event.dataTransfer.setData("Text", "");
+				}
 
 				element.addClass(configurations.draggableClass);
 				//if type of dragStartCallback is function..
@@ -77,7 +85,7 @@
 				return false;
 			});
 
-			element.on("dragend", function (event) {
+			element[0].addEventListener("dragend", function (event) {
 				element.removeClass(configurations.draggableClass);
 				//if type of dragEndCallback is function..
 				typeof dragEndCallback == "function" && dragEndCallback(scope, {$event: {target:dragndrop.getElement("eventTarget"), targetType:dragndrop.getElement("eventRestricted")}});
@@ -96,18 +104,25 @@
 			var flagOriginalEvent = false, flagDuplicatedEvent = false;
 			var dropCallback = $parse(attrs.dropCallback || undefined, /* interceptorFn */ null, /* expensiveChecks */ true);
 
-			element.on("dragover", function (event) {
+			element[0].addEventListener("dragover", function (event) {
 
 				if (eventRestricted == dragndrop.getElement("eventRestricted")) {
 					//if not prevent default, then no drop event..
 					event.preventDefault && event.preventDefault();
-					event.dataTransfer.dropEffect = dropEffect;
+
+					//jQuery Event..
+					if (!event.dataTransfer) {
+						event.originalEvent.dataTransfer.dropEffect = dropEffect;
+					}
+					else {
+						event.dataTransfer.dropEffect = dropEffect;
+					}
 				}
 
 				return false;
 			});
 
-			element.on("dragenter", function (event) {
+			element[0].addEventListener("dragenter", function (event) {
 
 				if (eventRestricted == dragndrop.getElement("eventRestricted")) {
 					if (flagOriginalEvent) {
@@ -123,7 +138,7 @@
 				return false;
 			});
 
-			element.on("dragleave", function (event) {
+			element[0].addEventListener("dragleave", function (event) {
 
 				if (eventRestricted == dragndrop.getElement("eventRestricted")) {
 					if (flagDuplicatedEvent) {
@@ -141,7 +156,7 @@
 				return false;
 			});
 
-			element.on("drop", function (event) {
+			element[0].addEventListener("drop", function (event) {
 
 				if (eventRestricted == dragndrop.getElement("eventRestricted")) {
 					event.preventDefault && event.preventDefault();
