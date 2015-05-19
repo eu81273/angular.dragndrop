@@ -4,7 +4,7 @@
 	License: MIT
 */
 
-(function () {
+(function (angular) {
 	"use strict";
 
 	var module = angular.module("angular.dragndrop", []);
@@ -53,6 +53,7 @@
 
 			var eventTarget = $parse(attrs.draggableModel || undefined, /* interceptorFn */ null, /* expensiveChecks */ true)(scope);
 			var eventRestricted = attrs.restricted;
+			var effectAllowed = attrs.effectAllowed || "copy";
 			var dragStartCallback = $parse(attrs.dragStartCallback || undefined, /* interceptorFn */ null, /* expensiveChecks */ true);
 			var dragEndCallback = $parse(attrs.dragEndCallback || undefined, /* interceptorFn */ null, /* expensiveChecks */ true);
 
@@ -65,7 +66,7 @@
 				//save current event target's restrict
 				dragndrop.setElement("eventRestricted", eventRestricted);
 
-				event.dataTransfer.effectAllowed = "copy";
+				event.dataTransfer.effectAllowed = effectAllowed;
 				//for FireFox compatibility
 				event.dataTransfer.setData("Text", "");
 
@@ -91,6 +92,7 @@
 		return function (scope, element, attrs) {
 
 			var eventRestricted = attrs.restricted;
+			var dropEffect = attrs.dropEffect || "copy";
 			var flagOriginalEvent = false, flagDuplicatedEvent = false;
 			var dropCallback = $parse(attrs.dropCallback || undefined, /* interceptorFn */ null, /* expensiveChecks */ true);
 
@@ -99,7 +101,7 @@
 				if (eventRestricted == dragndrop.getElement("eventRestricted")) {
 					//if not prevent default, then no drop event..
 					event.preventDefault && event.preventDefault();
-					event.dataTransfer.dropEffect = "copy";
+					event.dataTransfer.dropEffect = dropEffect;
 				}
 
 				return false;
@@ -157,9 +159,8 @@
 
 				return false;
 			});
-
 		}
 	}]);
 
-})();
+})(angular);
 

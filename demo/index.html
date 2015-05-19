@@ -33,12 +33,12 @@
 	<body data-ng-controller="defaultController" data-ng-cloak>
 		<div class="container">
 			<ul class="list-group filled-square-rounded">
-				<li class="list-group-item" draggable data-draggable-model="testmodel" data-drag-start-callback="dragStart($event)" data-drag-end-callback="dragEnd($event)" data-restricted="typeAAA">
+				<li class="list-group-item" draggable data-draggable-model="testmodel" data-effect-allowed="move" data-drag-start-callback="dragStart($event)" data-drag-end-callback="dragEnd($event)" data-restricted="typeAAA">
 					<h5 class="list-group-item-heading pointer-cursor" data-ng-click="">Movable Element</h5>
 				</li>
 			</ul>
 
-			<ul class="list-group filled-square-rounded" data-restricted="typeAAA" droppable data-drop-callback="elementDrop('typeAAA', $event)">
+			<ul class="list-group filled-square-rounded" data-restricted="typeAAA" droppable data-drop-effect="move" data-drop-callback="elementDrop('typeAAA', $event)">
 
 			</ul>
 
