@@ -60,23 +60,17 @@
 			//add draggable attribute
 			element.attr("draggable", true);
 
+			//jQuery/jqLite event listeners are not work correctly. so native event listener is used.
 			element[0].addEventListener("dragstart", function (event) {
 				//save current event target
 				dragndrop.setElement("eventTarget", eventTarget);
 				//save current event target's restrict
 				dragndrop.setElement("eventRestricted", eventRestricted);
 
-				//jQuery Event..
-				if (!event.dataTransfer) {
-					event.originalEvent.dataTransfer.effectAllowed = effectAllowed;
-					//for FireFox compatibility
-					event.originalEvent.dataTransfer.setData("Text", "");
-				}
-				else {
-					event.dataTransfer.effectAllowed = effectAllowed;
-					//for FireFox compatibility
-					event.dataTransfer.setData("Text", "");
-				}
+				event.dataTransfer.effectAllowed = effectAllowed;
+				//for FireFox compatibility
+				event.dataTransfer.setData("Text", "");
+
 
 				element.addClass(configurations.draggableClass);
 				//if type of dragStartCallback is function..
@@ -109,14 +103,7 @@
 				if (eventRestricted == dragndrop.getElement("eventRestricted")) {
 					//if not prevent default, then no drop event..
 					event.preventDefault && event.preventDefault();
-
-					//jQuery Event..
-					if (!event.dataTransfer) {
-						event.originalEvent.dataTransfer.dropEffect = dropEffect;
-					}
-					else {
-						event.dataTransfer.dropEffect = dropEffect;
-					}
+					event.dataTransfer.dropEffect = dropEffect;
 				}
 
 				return false;
